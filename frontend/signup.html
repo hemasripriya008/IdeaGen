@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up — Project Idea Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #1e1e2e;
+      --accent: #7c3aed;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --card: #0f0f18;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,58,237,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+    .glow-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+    }
+    .glow-orb-1 {
+      width: 400px; height: 400px;
+      background: rgba(124,58,237,0.12);
+      top: -100px; right: -100px;
+    }
+    .glow-orb-2 {
+      width: 300px; height: 300px;
+      background: rgba(6,182,212,0.08);
+      bottom: -100px; left: -100px;
+    }
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+      z-index: 1;
+      animation: fadeUp 0.6s ease both;
+    }
+    .auth-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(6,182,212,0.5), rgba(124,58,237,0.5), transparent);
+      border-radius: 24px 24px 0 0;
+    }
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .auth-logo h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #e2e8f0 0%, #06b6d4 50%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .auth-logo p {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    label {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    input {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+    input::placeholder { color: var(--muted); }
+    input:focus {
+      border-color: rgba(6,182,212,0.5);
+      box-shadow: 0 0 0 3px rgba(6,182,212,0.1);
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #0891b2, #0e7490);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 8px;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(6,182,212,0.4);
+    }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .btn-google {
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .btn-google:hover {
+      border-color: rgba(6,182,212,0.4);
+      background: rgba(6,182,212,0.05);
+    }
+    .google-icon { width: 18px; height: 18px; }
+    .auth-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .auth-footer a {
+      color: #67e8f9;
+      text-decoration: none;
+    }
+    .auth-footer a:hover { text-decoration: underline; }
+    .error-msg {
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: #fca5a5;
+      font-size: 12px;
+      margin-top: 16px;
+    }
+    .error-msg.active { display: block; }
+    .success-msg {
+      display: none;
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: #86efac;
+      font-size: 12px;
+      margin-top: 16px;
+    }
+    .success-msg.active { display: block; }
+    .password-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="glow-orb glow-orb-1"></div>
+<div class="glow-orb glow-orb-2"></div>
+
+<div class="auth-card">
+  <div class="auth-logo">
+    <h1>Create Account</h1>
+    <p>// start generating project ideas</p>
+  </div>
+
+  <div class="form-group">
+    <label>Full Name</label>
+    <input type="text" id="name" placeholder="John Doe" />
+  </div>
+
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="you@example.com" />
+  </div>
+
+  <div class="form-group">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="••••••••" />
+    <span class="password-hint">// minimum 6 characters</span>
+  </div>
+
+  <div class="form-group">
+    <label>Confirm Password</label>
+    <input type="password" id="confirmPassword" placeholder="••••••••" />
+  </div>
+
+  <button class="btn-primary" id="signupBtn" onclick="handleSignup()">
+    Create Account
+  </button>
+
+  <div class="divider">or continue with</div>
+
+  <button class="btn-google" onclick="handleGoogle()">
+    <svg class="google-icon" viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+    Sign up with Google
+  </button>
+
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="success-msg" id="successMsg"></div>
+
+  <div class="auth-footer">
+    Already have an account? <a href="login.html">Sign in</a>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, updateProfile, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4NMCZJig2Im8PdgOlMbhU-jt4Dj_2P8o",
+    authDomain: "project-idea-generator-a25e8.firebaseapp.com",
+    projectId: "project-idea-generator-a25e8",
+    storageBucket: "project-idea-generator-a25e8.firebasestorage.app",
+    messagingSenderId: "579410211146",
+    appId: "1:579410211146:web:3632e54985434b5b75d1b3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  // If already logged in redirect
+  onAuthStateChanged(auth, (user) => {
+    if (user) window.location.href = 'index.html';
+  });
+
+  window.handleSignup = async function() {
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const btn = document.getElementById('signupBtn');
+    const errorMsg = document.getElementById('errorMsg');
+    const successMsg = document.getElementById('successMsg');
+
+    errorMsg.classList.remove('active');
+    successMsg.classList.remove('active');
+
+    // Validate
+    if (!name || !email || !password || !confirmPassword) {
+      showError('Please fill in all fields!');
+      return;
+    }
+    if (password !== confirmPassword) {
+      showError('Passwords do not match!');
+      return;
+    }
+    if (password.length < 6) {
+      showError('Password must be at least 6 characters!');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Creating account...';
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(userCredential.user, { displayName: name });
+      successMsg.textContent = '// account created! redirecting...';
+      successMsg.classList.add('active');
+      setTimeout(() => window.location.href = 'index.html', 1500);
+    } catch (err) {
+      showError(getFriendlyError(err.code));
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }
+  };
+
+  window.handleGoogle = async function() {
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.classList.remove('active');
+    try {
+      await signInWithPopup(auth, provider);
+      window.location.href = 'index.html';
+    } catch (err) {
+      showError(getFriendlyError(err.code));
+    }
+  };
+
+  function showError(msg) {
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('active');
+  }
+
+  function getFriendlyError(code) {
+    switch(code) {
+      case 'auth/email-already-in-use': return 'An account with this email already exists.';
+      case 'auth/invalid-email': return 'Please enter a valid email address.';
+      case 'auth/weak-password': return 'Password is too weak. Use at least 6 characters.';
+      default: return 'Signup failed. Please try again.';
+    }
+  }
+</script>
+
+</body>
+</html>

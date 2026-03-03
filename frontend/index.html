@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Project Idea Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    [data-theme="dark"] {
+      --bg: #0a0a0f; --surface: #13131a; --border: #1e1e2e;
+      --accent: #7c3aed; --accent2: #06b6d4; --accent3: #f59e0b;
+      --text: #e2e8f0; --muted: #64748b; --card: #0f0f18;
+      --sidebar-bg: #0d0d14; --nav-bg: rgba(10,10,15,0.8);
+      --input-bg: #0f0f18; --hover: #1a1a26;
+    }
+    [data-theme="light"] {
+      --bg: #f8f7ff; --surface: #ffffff; --border: #e2e0f0;
+      --accent: #7c3aed; --accent2: #06b6d4; --accent3: #f59e0b;
+      --text: #1e1b3a; --muted: #6b7280; --card: #f0eeff;
+      --sidebar-bg: #f0eeff; --nav-bg: rgba(248,247,255,0.9);
+      --input-bg: #ffffff; --hover: #ede9ff;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; overflow-x: hidden; display: none; transition: background 0.3s, color 0.3s; }
+    body.visible { display: flex; }
+
+    /* Sidebar */
+    .sidebar { width: 300px; min-height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; left: -300px; top: 0; bottom: 0; z-index: 200; transition: left 0.3s ease; overflow-y: auto; }
+    .sidebar.open { left: 0; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199; }
+    .sidebar-overlay.active { display: block; }
+    .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .sidebar-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+    .sidebar-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+    .sidebar-close:hover { color: var(--text); }
+    .sidebar-tabs { display: flex; border-bottom: 1px solid var(--border); }
+    .sidebar-tab { flex: 1; padding: 12px; background: none; border: none; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+    .sidebar-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .sidebar-content { padding: 16px; flex: 1; }
+    .sidebar-empty { color: var(--muted); font-size: 12px; text-align: center; padding: 40px 20px; }
+
+    .saved-idea-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; transition: all 0.2s; }
+    .saved-idea-item.pinned { border-color: rgba(245,158,11,0.4); }
+    .saved-idea-topic { font-size: 13px; color: var(--text); margin-bottom: 4px; font-weight: 500; }
+    .saved-idea-meta { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+    .saved-idea-preview { font-size: 11px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; border-left: 2px solid var(--border); padding-left: 8px; }
+    .saved-idea-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .action-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; color: var(--muted); font-family: 'DM Mono', monospace; transition: all 0.2s; }
+    .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .action-btn.pin.active { border-color: rgba(245,158,11,0.6); color: #f59e0b; }
+    .action-btn.delete:hover { border-color: rgba(239,68,68,0.5); color: #ef4444; }
+    .action-btn.view { border-color: rgba(124,58,237,0.4); color: #a78bfa; }
+    .action-btn.view:hover { background: rgba(124,58,237,0.1); }
+
+    /* Main layout */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; width: 100%; }
+    .navbar { position: sticky; top: 0; z-index: 100; background: var(--nav-bg); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-left { display: flex; align-items: center; gap: 12px; }
+    .hamburger { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; cursor: pointer; color: var(--muted); font-size: 16px; transition: all 0.2s; }
+    .hamburger:hover { border-color: var(--accent); color: var(--accent); }
+    .nav-logo { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; background: linear-gradient(135deg, #a78bfa, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; cursor: pointer; font-size: 15px; transition: all 0.2s; color: var(--muted); }
+    .theme-btn:hover { border-color: var(--accent); }
+    .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; font-family: 'Syne', sans-serif; }
+    .user-name { font-size: 12px; color: var(--muted); }
+    .user-dropdown-wrap { position: relative; }
+    .user-dropdown { display: none; position: absolute; top: 44px; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px; min-width: 180px; z-index: 300; box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+    .user-dropdown.open { display: block; }
+    .dropdown-item { display: block; width: 100%; padding: 10px 12px; background: none; border: none; color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px; text-align: left; cursor: pointer; border-radius: 8px; transition: background 0.2s; }
+    .dropdown-item:hover { background: var(--hover); }
+    .dropdown-item.danger { color: #fca5a5; }
+    .dropdown-item.danger:hover { background: rgba(239,68,68,0.1); }
+    .dropdown-divider { height: 1px; background: var(--border); margin: 6px 0; }
+
+    /* Modals */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 500; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 32px; width: 90%; max-width: 420px; animation: fadeUp 0.3s ease both; }
+    .modal h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+    .modal input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 14px; padding: 12px 16px; outline: none; margin-bottom: 16px; transition: border-color 0.2s; }
+    .modal input:focus { border-color: rgba(124,58,237,0.5); }
+    .modal-btns { display: flex; gap: 10px; }
+    .modal-btn { flex: 1; padding: 11px; border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .modal-btn.primary { background: linear-gradient(135deg, #7c3aed, #5b21b6); color: white; }
+    .modal-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(124,58,237,0.4); }
+    .modal-btn.secondary { background: var(--hover); color: var(--muted); border: 1px solid var(--border); }
+
+    /* Idea Detail Modal */
+    .detail-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; width: 90%; max-width: 680px; max-height: 85vh; overflow-y: auto; animation: fadeUp 0.3s ease both; }
+    .detail-modal-header { padding: 24px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; position: sticky; top: 0; background: var(--surface); z-index: 1; border-radius: 20px 20px 0 0; }
+    .detail-modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+    .detail-modal-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .detail-close { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer; color: var(--muted); font-size: 14px; transition: all 0.2s; flex-shrink: 0; margin-left: 12px; }
+    .detail-close:hover { border-color: var(--accent); color: var(--text); }
+    .detail-modal-body { padding: 24px 28px; }
+    .detail-section { margin-bottom: 24px; }
+    .detail-section-title { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+    .detail-content { font-size: 13px; line-height: 1.9; color: var(--muted); white-space: pre-wrap; }
+    .detail-content strong { color: var(--text); font-weight: 500; }
+    .detail-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .detail-tag { background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3); color: #a78bfa; font-size: 11px; padding: 4px 10px; border-radius: 100px; }
+    .detail-tag.cyan { background: rgba(6,182,212,0.15); border-color: rgba(6,182,212,0.3); color: #67e8f9; }
+    .detail-tag.amber { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); color: #fcd34d; }
+
+    /* Main content */
+    .container { max-width: 860px; margin: 0 auto; padding: 50px 24px; width: 100%; }
+    header { text-align: center; margin-bottom: 50px; animation: fadeDown 0.8s ease both; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3); color: #a78bfa; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; padding: 6px 14px; border-radius: 100px; margin-bottom: 20px; }
+    .badge::before { content: ''; width: 6px; height: 6px; background: #7c3aed; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.5); } }
+    h1 { font-family: 'Syne', sans-serif; font-size: clamp(32px, 5vw, 64px); font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; background: linear-gradient(135deg, #e2e8f0 0%, #a78bfa 50%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 12px; }
+    [data-theme="light"] h1 { background: linear-gradient(135deg, #1e1b3a 0%, #7c3aed 50%, #06b6d4 100%); -webkit-background-clip: text; background-clip: text; }
+    .subtitle { color: var(--muted); font-size: 13px; line-height: 1.6; max-width: 380px; margin: 0 auto; }
+
+    .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 36px; margin-bottom: 36px; animation: fadeUp 0.8s ease 0.2s both; position: relative; overflow: hidden; }
+    .form-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(124,58,237,0.5), rgba(6,182,212,0.5), transparent); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    input, select { background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 14px; padding: 12px 16px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; appearance: none; }
+    input::placeholder { color: var(--muted); }
+    input:focus, select:focus { border-color: rgba(124,58,237,0.5); box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+    select option { background: var(--surface); }
+    .generate-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #7c3aed, #5b21b6); border: none; border-radius: 12px; color: white; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.05em; cursor: pointer; transition: all 0.3s ease; }
+    .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(124,58,237,0.4); }
+    .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .loading { display: none; text-align: center; padding: 50px 20px; }
+    .loading.active { display: block; }
+    .loader { width: 44px; height: 44px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; margin: 0 auto 16px; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { color: var(--muted); font-size: 13px; animation: blink 1.5s ease infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .results { display: none; }
+    .results.active { display: block; animation: fadeUp 0.6s ease both; }
+    .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .results-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+    .results-count { font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 4px 12px; border-radius: 100px; }
+    .ideas-container { display: flex; flex-direction: column; gap: 18px; }
+
+    .idea-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; position: relative; overflow: hidden; animation: fadeUp 0.5s ease both; transition: border-color 0.3s, transform 0.3s; }
+    .idea-card:nth-child(1) { animation-delay: 0.1s; }
+    .idea-card:nth-child(2) { animation-delay: 0.2s; }
+    .idea-card:nth-child(3) { animation-delay: 0.3s; }
+    .idea-card:hover { border-color: rgba(124,58,237,0.3); transform: translateY(-2px); }
+    .idea-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--accent), var(--accent2)); }
+    .idea-card:nth-child(2)::before { background: linear-gradient(180deg, var(--accent2), var(--accent3)); }
+    .idea-card:nth-child(3)::before { background: linear-gradient(180deg, var(--accent3), var(--accent)); }
+    .idea-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .idea-number { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+    .idea-card-actions { display: flex; gap: 6px; }
+    .idea-action-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; color: var(--muted); font-family: 'DM Mono', monospace; transition: all 0.2s; }
+    .idea-action-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .idea-action-btn.saved { border-color: rgba(34,197,94,0.5); color: #22c55e; }
+    .idea-action-btn.pinned { border-color: rgba(245,158,11,0.5); color: #f59e0b; }
+    .idea-content { font-size: 13px; line-height: 1.85; color: var(--muted); }
+    .idea-content strong, .idea-content b { color: var(--text); font-weight: 600; }
+    .idea-content .section-label { display: inline-block; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-top: 12px; margin-bottom: 4px; }
+    .idea-content ul { padding-left: 18px; margin-top: 4px; }
+    .idea-content li { margin-bottom: 4px; }
+
+    .error-msg { display: none; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 14px 18px; color: #fca5a5; font-size: 13px; margin-top: 16px; }
+    .error-msg.active { display: block; }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 20px; font-size: 13px; color: var(--text); z-index: 999; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: rgba(34,197,94,0.4); color: #86efac; }
+    .toast.error { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+
+    footer { text-align: center; margin-top: 60px; padding-bottom: 40px; color: var(--muted); font-size: 11px; letter-spacing: 0.05em; }
+    @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .form-card { padding: 20px; } .container { padding: 32px 16px; } .user-name { display: none; } .sidebar { width: 280px; } }
+  </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-title">📋 My Ideas</span>
+    <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+  </div>
+  <div class="sidebar-tabs">
+    <button class="sidebar-tab active" id="tabAll" onclick="switchTab('all')">All</button>
+    <button class="sidebar-tab" id="tabPinned" onclick="switchTab('pinned')">📌 Pinned</button>
+  </div>
+  <div class="sidebar-content" id="sidebarContent">
+    <p class="sidebar-empty">// no saved ideas yet</p>
+  </div>
+</div>
+
+<div class="main-wrap">
+  <nav class="navbar">
+    <div class="nav-left">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
+      <div class="nav-logo">⚡ IdeaGen</div>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+      <div class="user-dropdown-wrap">
+        <div class="user-info" onclick="toggleDropdown()">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span class="user-name" id="userName">loading...</span>
+        </div>
+        <div class="user-dropdown" id="userDropdown">
+          <button class="dropdown-item" onclick="openChangeUsername()">✏️ Change Username</button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item danger" onclick="handleLogout()">🚪 Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <header>
+      <div class="badge">AI Powered</div>
+      <h1>Project Idea<br/>Generator</h1>
+      <p class="subtitle">Generate detailed project ideas tailored to your skill level and tech stack.</p>
+    </header>
+
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Topic / Domain</label>
+          <input type="text" id="topic" placeholder="e.g. healthcare, finance, education..." />
+        </div>
+        <div class="form-group">
+          <label>Difficulty Level</label>
+          <select id="difficulty">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tech Stack</label>
+          <input type="text" id="techStack" placeholder="e.g. React, Node.js, Python..." />
+        </div>
+      </div>
+      <button class="generate-btn" id="generateBtn" onclick="generateIdeas()">⚡ Generate Project Ideas</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="loader"></div>
+      <p>// generating detailed ideas with AI...</p>
+    </div>
+
+    <div class="results" id="results">
+      <div class="results-header">
+        <span class="results-title">Generated Ideas</span>
+        <span class="results-count" id="resultsCount">3 ideas</span>
+      </div>
+      <div class="ideas-container" id="ideasContainer"></div>
+    </div>
+
+    <footer>project-idea-generator // powered by cohere ai + firebase</footer>
+  </div>
+</div>
+
+<!-- Change Username Modal -->
+<div class="modal-overlay" id="usernameModal">
+  <div class="modal">
+    <h3>✏️ Change Username</h3>
+    <input type="text" id="newUsername" placeholder="Enter new username..." />
+    <div class="modal-btns">
+      <button class="modal-btn secondary" onclick="closeModal('usernameModal')">Cancel</button>
+      <button class="modal-btn primary" onclick="saveUsername()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Idea Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="detail-modal">
+    <div class="detail-modal-header">
+      <div>
+        <div class="detail-modal-title" id="detailTitle">Project Idea</div>
+        <div class="detail-modal-meta" id="detailMeta"></div>
+      </div>
+      <button class="detail-close" onclick="closeModal('detailModal')">✕ Close</button>
+    </div>
+    <div class="detail-modal-body" id="detailBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4NMCZJig2Im8PdgOlMbhU-jt4Dj_2P8o",
+    authDomain: "project-idea-generator-a25e8.firebaseapp.com",
+    projectId: "project-idea-generator-a25e8",
+    storageBucket: "project-idea-generator-a25e8.firebasestorage.app",
+    messagingSenderId: "579410211146",
+    appId: "1:579410211146:web:3632e54985434b5b75d1b3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUser = null;
+  let savedIdeas = [];
+  let currentTab = 'all';
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) { window.location.href = 'login.html'; return; }
+    currentUser = user;
+    document.body.classList.add('visible');
+    updateUserUI(user);
+    loadSavedIdeas();
+  });
+
+  function updateUserUI(user) {
+    const name = user.displayName || user.email.split('@')[0];
+    document.getElementById('userName').textContent = '// ' + name;
+    document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+  }
+
+  window.handleLogout = async function() {
+    await signOut(auth);
+    window.location.href = 'login.html';
+  };
+
+  // Theme
+  let isDark = true;
+  window.toggleTheme = function() {
+    isDark = !isDark;
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  };
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light') { isDark = false; document.documentElement.setAttribute('data-theme', 'light'); document.getElementById('themeBtn').textContent = '☀️'; }
+
+  // Sidebar
+  window.openSidebar = function() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); };
+  window.closeSidebar = function() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); };
+  window.switchTab = function(tab) {
+    currentTab = tab;
+    document.getElementById('tabAll').classList.toggle('active', tab === 'all');
+    document.getElementById('tabPinned').classList.toggle('active', tab === 'pinned');
+    renderSidebar();
+  };
+
+  // Dropdown
+  window.toggleDropdown = function() { document.getElementById('userDropdown').classList.toggle('open'); };
+  document.addEventListener('click', (e) => { if (!e.target.closest('.user-dropdown-wrap')) document.getElementById('userDropdown').classList.remove('open'); });
+
+  // Modals
+  window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
+  window.openChangeUsername = function() {
+    document.getElementById('userDropdown').classList.remove('open');
+    document.getElementById('newUsername').value = currentUser.displayName || '';
+    document.getElementById('usernameModal').classList.add('active');
+  };
+  window.saveUsername = async function() {
+    const newName = document.getElementById('newUsername').value.trim();
+    if (!newName) { showToast('Please enter a username!', 'error'); return; }
+    try {
+      await updateProfile(currentUser, { displayName: newName });
+      updateUserUI(currentUser);
+      closeModal('usernameModal');
+      showToast('Username updated! ✅', 'success');
+    } catch (err) { showToast('Failed to update username', 'error'); }
+  };
+
+  // Generate Ideas — detailed prompt
+  const API_URL = 'http://localhost:5000/api/ideas';
+
+  window.generateIdeas = async function() {
+    const topic = document.getElementById('topic').value.trim();
+    const difficulty = document.getElementById('difficulty').value;
+    const techStack = document.getElementById('techStack').value.trim();
+    const btn = document.getElementById('generateBtn');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    const errorMsg = document.getElementById('errorMsg');
+
+    if (!topic) { errorMsg.textContent = 'Please enter a topic!'; errorMsg.classList.add('active'); return; }
+
+    errorMsg.classList.remove('active');
+    results.classList.remove('active');
+    loading.classList.add('active');
+    btn.disabled = true;
+    btn.textContent = '// generating...';
+
+    try {
+      const response = await fetch(`${API_URL}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, difficulty, techStack })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      displayIdeas(data.ideas, topic, difficulty, techStack);
+    } catch (err) {
+      errorMsg.textContent = 'Failed to generate ideas. Make sure backend is running!';
+      errorMsg.classList.add('active');
+    } finally {
+      loading.classList.remove('active');
+      btn.disabled = false;
+      btn.textContent = '⚡ Generate Project Ideas';
+    }
+  };
+
+  function displayIdeas(ideasText, topic, difficulty, techStack) {
+    const container = document.getElementById('ideasContainer');
+    const results = document.getElementById('results');
+    const parts = ideasText.split(/(?=###\s|\*\*Project Idea|\*\*Idea \d)/g).filter(p => p.trim());
+    const items = parts.length > 1 ? parts : [ideasText];
+
+    container.innerHTML = '';
+    items.forEach((part, i) => {
+      const id = `idea_${Date.now()}_${i}`;
+      container.innerHTML += `
+        <div class="idea-card" id="card_${id}">
+          <div class="idea-card-header">
+            <span class="idea-number">// idea ${String(i+1).padStart(2,'0')}</span>
+            <div class="idea-card-actions">
+              <button class="idea-action-btn" onclick="openDetailModal('${id}', '${topic}', '${difficulty}', '${techStack}')">👁 View Details</button>
+              <button class="idea-action-btn" id="pin_${id}" onclick="pinIdea('${id}')">📌 Pin</button>
+              <button class="idea-action-btn" id="save_${id}" onclick="saveIdea('${id}', '${topic}', '${difficulty}', '${techStack}')">💾 Save</button>
+            </div>
+          </div>
+          <div class="idea-content" id="content_${id}">${formatText(part)}</div>
+        </div>`;
+    });
+
+    document.getElementById('resultsCount').textContent = `${items.length} idea${items.length !== 1 ? 's' : ''}`;
+    results.classList.add('active');
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Open detail modal for generated idea
+  window.openDetailModal = function(id, topic, difficulty, techStack) {
+    const content = document.getElementById(`content_${id}`).innerText;
+    showDetailModal(topic, difficulty, techStack, content);
+  };
+
+  // Open detail modal for saved idea
+  window.openSavedDetailModal = function(ideaId) {
+    const idea = savedIdeas.find(i => i.id === ideaId);
+    if (!idea) return;
+    showDetailModal(idea.topic, idea.difficulty, idea.techStack, idea.ideaText);
+  };
+
+  function showDetailModal(topic, difficulty, techStack, content) {
+    document.getElementById('detailTitle').textContent = `💡 ${topic.charAt(0).toUpperCase() + topic.slice(1)} Project`;
+    document.getElementById('detailMeta').textContent = `${difficulty} · ${techStack || 'any stack'}`;
+    document.getElementById('detailBody').innerHTML = `
+      <div class="detail-section">
+        <div class="detail-section-title">// full idea details</div>
+        <div class="detail-content">${formatText(content)}</div>
+      </div>
+      <div class="detail-tags">
+        <span class="detail-tag">🎯 ${difficulty}</span>
+        <span class="detail-tag cyan">🛠 ${techStack || 'any stack'}</span>
+        <span class="detail-tag amber">💡 ${topic}</span>
+      </div>`;
+    document.getElementById('detailModal').classList.add('active');
+  }
+
+  // Pin idea locally
+  window.pinIdea = function(id) {
+    const btn = document.getElementById(`pin_${id}`);
+    const card = document.getElementById(`card_${id}`);
+    if (btn.classList.contains('pinned')) {
+      btn.classList.remove('pinned'); btn.textContent = '📌 Pin'; card.style.borderColor = '';
+      showToast('Unpinned', 'success');
+    } else {
+      btn.classList.add('pinned'); btn.textContent = '📌 Pinned'; card.style.borderColor = 'rgba(245,158,11,0.5)';
+      showToast('Idea pinned! 📌', 'success');
+    }
+  };
+
+  // Save idea
+  window.saveIdea = async function(id, topic, difficulty, techStack) {
+    const btn = document.getElementById(`save_${id}`);
+    if (btn.classList.contains('saved')) { showToast('Already saved!', 'error'); return; }
+    try {
+      const content = document.getElementById(`content_${id}`).innerText;
+      await addDoc(collection(db, 'savedIdeas'), {
+        userId: currentUser.uid, topic, difficulty,
+        techStack: techStack || 'any', ideaText: content,
+        pinned: false, createdAt: serverTimestamp()
+      });
+      btn.textContent = '✅ Saved'; btn.classList.add('saved');
+      showToast('Idea saved! 💾', 'success');
+      loadSavedIdeas();
+    } catch (err) { showToast('Failed to save', 'error'); }
+  };
+
+  // Load ideas from Firestore
+  async function loadSavedIdeas() {
+    if (!currentUser) return;
+    try {
+      const q = query(collection(db, 'savedIdeas'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      savedIdeas = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(i => i.userId === currentUser.uid);
+      renderSidebar();
+    } catch (err) { console.error(err); }
+  }
+
+  function renderSidebar() {
+    const content = document.getElementById('sidebarContent');
+    const list = currentTab === 'pinned' ? savedIdeas.filter(i => i.pinned) : savedIdeas;
+
+    if (list.length === 0) {
+      content.innerHTML = `<p class="sidebar-empty">// ${currentTab === 'pinned' ? 'no pinned ideas' : 'no saved ideas yet'}</p>`;
+      return;
+    }
+
+    content.innerHTML = list.map(item => `
+      <div class="saved-idea-item ${item.pinned ? 'pinned' : ''}">
+        <div class="saved-idea-topic">${item.topic}</div>
+        <div class="saved-idea-meta">${item.difficulty} · ${item.techStack || 'any'}</div>
+        <div class="saved-idea-preview">${(item.ideaText || '').substring(0, 100)}...</div>
+        <div class="saved-idea-actions">
+          <button class="action-btn view" onclick="openSavedDetailModal('${item.id}')">👁 View</button>
+          <button class="action-btn pin ${item.pinned ? 'active' : ''}" onclick="togglePin('${item.id}', ${item.pinned})">${item.pinned ? '📌 Unpin' : '📌 Pin'}</button>
+          <button class="action-btn delete" onclick="deleteIdea('${item.id}')">🗑️</button>
+        </div>
+      </div>`).join('');
+  }
+
+  window.togglePin = async function(id, currentPinned) {
+    try {
+      await updateDoc(doc(db, 'savedIdeas', id), { pinned: !currentPinned });
+      showToast(currentPinned ? 'Unpinned' : 'Pinned! 📌', 'success');
+      loadSavedIdeas();
+    } catch (err) { showToast('Failed to update', 'error'); }
+  };
+
+  window.deleteIdea = async function(id) {
+    try {
+      await deleteDoc(doc(db, 'savedIdeas', id));
+      showToast('Deleted 🗑️', 'success');
+      loadSavedIdeas();
+    } catch (err) { showToast('Failed to delete', 'error'); }
+  };
+
+  function formatText(text) {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/#{1,3}\s(.+)/g, '<strong>$1</strong>')
+      .replace(/- (.+)/g, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+      .replace(/---/g, '<hr style="border-color:var(--border);margin:12px 0">')
+      .trim();
+  }
+
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = `toast ${type} show`;
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  document.getElementById('topic').addEventListener('keydown', (e) => { if (e.key === 'Enter') window.generateIdeas(); });
+</script>
+
+</body>
+</html>
