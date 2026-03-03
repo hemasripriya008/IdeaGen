@@ -1,4 +1,5 @@
 **⚡IdeaGen — AI Project Idea Generator**
+ 
  Description
 
 IdeaGen is a full-stack AI-powered web application that generates personalized software project ideas based on a user’s skill level and preferred technology stack. The application allows users to securely authenticate, generate ideas using AI, and manage saved ideas through a simple and interactive dashboard.
