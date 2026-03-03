@@ -1,9 +1,9 @@
-⚡IdeaGen — AI Project Idea Generator
+**⚡IdeaGen — AI Project Idea Generator**
  Description
 
 IdeaGen is a full-stack AI-powered web application that generates personalized software project ideas based on a user’s skill level and preferred technology stack. The application allows users to securely authenticate, generate ideas using AI, and manage saved ideas through a simple and interactive dashboard.
 
- Features
+ **Features**
 
 Email & Password Authentication
 
@@ -19,8 +19,8 @@ Update Username
 
 Dark / Light Mode
 
-Tech Stack
-Frontend
+**Tech Stack**
+**Frontend**
 
 HTML
 
@@ -28,23 +28,23 @@ CSS
 
 JavaScript
 
-Backend
+**Backend**
 
 Node.js
 
 Express.js
 
-AI Integration
+**AI Integration**
 
 Cohere API
 
-Database & Authentication
+**Database & Authentication**
 
 Firebase Firestore
 
 Firebase Authentication
 
-Running Locally
+**Running Locally**
 
 After cloning this repository, follow the steps below:
 
@@ -62,7 +62,7 @@ Inside the backend folder, create a .env file and add:
 
 PORT=5000
 COHERE_API_KEY=your_cohere_api_key
-▶ Start the Backend
+**▶ Start the Backend**
 cd backend
 npm install
 npm run dev
@@ -70,13 +70,13 @@ npm run dev
 The backend will run on:
 http://localhost:5000
 
-▶ Start the Frontend
+**▶ Start the Frontend**
 cd frontend
 
 Open login.html using Live Server and ensure the API base URL points to:
 http://localhost:5000
 
-📂 Project Structure
+**📂 Project Structure**
 backend/
  ├── routes/
  ├── firebase.js
