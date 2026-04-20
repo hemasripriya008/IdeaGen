@@ -381,9 +381,7 @@
   };
 
   // Generate Ideas — detailed prompt
-const API_URL = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
-  ? 'http://localhost:5000'
-  : 'https://your-actual-render-url.onrender.com';
+const API_URL = 'https://ideagen-j6p9.onrender.com/'
   window.generateIdeas = async function() {
     const topic = document.getElementById('topic').value.trim();
     const difficulty = document.getElementById('difficulty').value;
