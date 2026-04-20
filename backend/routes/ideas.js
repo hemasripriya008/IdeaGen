@@ -7,30 +7,23 @@ const cohere = new CohereClient({
   token: process.env.COHERE_API_KEY
 });
 
-// POST /api/ideas/generate
-router.post('/generate', async (req, res) => {
-  const { topic, difficulty, techStack } = req.body;
-
-  if (!topic) {
-    return res.status(400).json({ error: 'Topic is required' });
-  }
-
-  try {
-    const prompt = `Generate 3 unique and detailed software project ideas for a ${difficulty || 'beginner'} developer.
+// Helper function to generate ONE idea
+async function generateSingleIdea(topic, difficulty, techStack, ideaNumber) {
+  const prompt = `Generate 1 unique and detailed software project idea for a ${difficulty || 'beginner'} developer.
 
 Topic/Domain: ${topic}
 Tech Stack: ${techStack || 'any'}
 Difficulty: ${difficulty || 'beginner'}
 
-For EACH of the 3 ideas, provide ALL of the following sections in detail:
+Provide ALL of the following sections:
 
-**Project Idea [number]: [Project Title]**
+**Project Idea ${ideaNumber}: [Project Title]**
 
 **Overview:**
 Write 3-4 sentences describing what the project does, its purpose, and who would use it.
 
 **Problem It Solves:**
-Explain the real-world problem or need this project addresses in 2-3 sentences.
+Explain the real-world problem this project addresses in 2-3 sentences.
 
 **Key Features:**
 - Feature 1 with brief explanation
@@ -54,18 +47,34 @@ Explain the real-world problem or need this project addresses in 2-3 sentences.
 
 **Estimated Time to Build:** [timeframe for ${difficulty || 'beginner'}]
 
-**Difficulty Level:** ${difficulty || 'beginner'}
+**Difficulty Level:** ${difficulty || 'beginner'}`;
 
----
+  const response = await cohere.chat({
+    model: 'command-light',   // ⚡ 3x faster than command-a-03-2025
+    message: prompt,
+    maxTokens: 600            // ⚡ enough for 1 detailed idea
+  });
 
-Make each idea creative, practical, and different from each other. Be as detailed as possible.`;
+  return response.text;
+}
 
-    const response = await cohere.chat({
-      model: 'command-a-03-2025',
-      message: prompt
-    });
+// POST /api/ideas/generate
+router.post('/generate', async (req, res) => {
+  const { topic, difficulty, techStack } = req.body;
 
-    const ideas = response.text;
+  if (!topic) {
+    return res.status(400).json({ error: 'Topic is required' });
+  }
+
+  try {
+    // ⚡ Generate all 3 ideas SIMULTANEOUSLY instead of one giant prompt
+    const [idea1, idea2, idea3] = await Promise.all([
+      generateSingleIdea(topic, difficulty, techStack, 1),
+      generateSingleIdea(topic, difficulty, techStack, 2),
+      generateSingleIdea(topic, difficulty, techStack, 3)
+    ]);
+
+    const ideas = `${idea1}\n\n---\n\n${idea2}\n\n---\n\n${idea3}`;
 
     // Save to Firestore
     await db.collection('ideas').add({
