@@ -381,7 +381,8 @@
   };
 
   // Generate Ideas — detailed prompt
-const API_URL = 'https://ideagen-j6p9.onrender.com/'
+  const API_URL = 'https://ideagen-j6p9.onrender.com/api/ideas';
+
   window.generateIdeas = async function() {
     const topic = document.getElementById('topic').value.trim();
     const difficulty = document.getElementById('difficulty').value;
